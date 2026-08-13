@@ -2,30 +2,48 @@
 Savanna Restaurant POS System - Authentication Module
 ======================================================
 Handles user login, signup, and session management with secure password handling.
-Provides role-based access control for different user types.
+Only admin can create admin accounts via Manage Staff.
 """
 
 import tkinter as tk
 from tkinter import ttk, messagebox
+import re
 from database import Database
 from config import Theme, APP_NAME, Roles
 from styles import StyleManager
 
 class AuthWindow:
-    """Authentication window handling login and registration."""
-
     def __init__(self, root, on_login_success):
         self.root = root
         self.on_login_success = on_login_success
         self.current_user = None
 
         self.root.title(f"{APP_NAME} - Sign In")
-        self.root.geometry("450x600")
+        self.root.geometry("450x680")
         self.root.configure(bg=Theme.BG_PRIMARY)
         self.root.resizable(False, False)
 
         self.style_manager = StyleManager(self.root)
         self.build_login_ui()
+
+    def validate_email(self, email):
+        """Simple email format validation."""
+        return re.match(r"[^@]+@[^@]+\.[^@]+", email) is not None
+
+    def validate_phone(self, phone):
+        """Validate Kenyan phone numbers: 07XXXXXXXX, 01XXXXXXXX, +254XXXXXXXXX, 254XXXXXXXXX."""
+        # Remove spaces and dashes
+        phone = re.sub(r'[\s\-()]', '', phone)
+        patterns = [
+            r'^07\d{8}$',      # 0712345678
+            r'^01\d{8}$',      # 0112345678
+            r'^254\d{9}$',     # 254712345678
+            r'^\+254\d{9}$'    # +254712345678
+        ]
+        for pattern in patterns:
+            if re.match(pattern, phone):
+                return True
+        return False
 
     def build_login_ui(self):
         for widget in self.root.winfo_children():
@@ -56,7 +74,6 @@ class AuthWindow:
                                       font=(Theme.FONT_FAMILY, Theme.FONT_SIZE_NORMAL),
                                       relief="flat", width=30)
         self.username_entry.pack(fill="x", pady=(0, 15), ipady=8)
-        # Entry is left empty
 
         tk.Label(card, text="Password", bg=Theme.BG_SECONDARY, fg=Theme.TEXT_SECONDARY,
                 font=(Theme.FONT_FAMILY, Theme.FONT_SIZE_NORMAL)).pack(anchor="w", pady=(0, 5))
@@ -65,7 +82,6 @@ class AuthWindow:
                                       font=(Theme.FONT_FAMILY, Theme.FONT_SIZE_NORMAL),
                                       relief="flat", width=30, show="*")
         self.password_entry.pack(fill="x", pady=(0, 20), ipady=8)
-        # Entry is left empty
 
         login_btn = tk.Button(card, text="SIGN IN", command=self.attempt_login,
                              bg=Theme.ACCENT_PRIMARY, fg=Theme.TEXT_ON_ACCENT,
@@ -74,8 +90,6 @@ class AuthWindow:
                              activebackground="#1ed760", activeforeground=Theme.TEXT_ON_ACCENT,
                              padx=20, pady=10)
         login_btn.pack(fill="x", pady=(0, 15))
-
-        # No hint label
 
         signup_frame = tk.Frame(container, bg=Theme.BG_PRIMARY)
         signup_frame.pack(pady=20)
@@ -128,9 +142,16 @@ class AuthWindow:
                                  font=(Theme.FONT_FAMILY, Theme.FONT_SIZE_NORMAL), relief="flat")
         self.reg_email.pack(fill="x", pady=(0, 10), ipady=6)
 
+        tk.Label(card, text="Phone Number", bg=Theme.BG_SECONDARY, fg=Theme.TEXT_SECONDARY,
+                font=(Theme.FONT_FAMILY, Theme.FONT_SIZE_NORMAL)).pack(anchor="w")
+        self.reg_phone = tk.Entry(card, bg=Theme.BG_INPUT, fg=Theme.TEXT_PRIMARY,
+                                 insertbackground=Theme.TEXT_PRIMARY,
+                                 font=(Theme.FONT_FAMILY, Theme.FONT_SIZE_NORMAL), relief="flat")
+        self.reg_phone.pack(fill="x", pady=(0, 10), ipady=6)
+
         tk.Label(card, text="Role", bg=Theme.BG_SECONDARY, fg=Theme.TEXT_SECONDARY,
                 font=(Theme.FONT_FAMILY, Theme.FONT_SIZE_NORMAL)).pack(anchor="w")
-        self.reg_role = ttk.Combobox(card, values=Roles.ALL, state="readonly",
+        self.reg_role = ttk.Combobox(card, values=Roles.REGISTRATION_ROLES, state="readonly",
                                     font=(Theme.FONT_FAMILY, Theme.FONT_SIZE_NORMAL))
         self.reg_role.set(Roles.WAITER)
         self.reg_role.pack(fill="x", pady=(0, 10))
@@ -166,44 +187,45 @@ class AuthWindow:
     def attempt_login(self):
         username = self.username_entry.get().strip()
         password = self.password_entry.get().strip()
-
         if not username or not password:
             messagebox.showwarning("Input Required", "Please enter both username and password.")
             return
-
         user = Database.authenticate_user(username, password)
-
         if user:
             self.current_user = user
             Database.log_activity(user["id"], "LOGIN", "users", user["id"])
             self.on_login_success(user)
         else:
-            messagebox.showerror("Authentication Failed", 
-                               "Invalid username or password. Please try again.")
+            messagebox.showerror("Authentication Failed", "Invalid username or password. Please try again.")
             self.password_entry.delete(0, tk.END)
 
     def attempt_register(self):
         full_name = self.reg_name.get().strip()
         username = self.reg_username.get().strip()
         email = self.reg_email.get().strip()
+        phone = self.reg_phone.get().strip()
         role = self.reg_role.get()
         password = self.reg_password.get().strip()
         confirm = self.reg_confirm.get().strip()
 
-        if not all([full_name, username, email, password]):
+        if not all([full_name, username, email, phone, password]):
             messagebox.showwarning("Input Required", "Please fill in all fields.")
             return
-
         if password != confirm:
             messagebox.showerror("Password Mismatch", "Passwords do not match.")
             return
-
         if len(password) < 6:
             messagebox.showwarning("Weak Password", "Password must be at least 6 characters.")
             return
+        if not self.validate_email(email):
+            messagebox.showerror("Invalid Email", "Please enter a valid email address (e.g., name@domain.com).")
+            return
+        if not self.validate_phone(phone):
+            messagebox.showerror("Invalid Phone", "Please enter a valid Kenyan phone number (e.g., 0712345678, +254712345678).")
+            return
 
         try:
-            user_id = Database.create_user(username, password, full_name, email, role)
+            user_id = Database.create_user(username, password, full_name, email, phone, role)
             messagebox.showinfo("Success", "Account created successfully! You can now sign in.")
             self.build_login_ui()
         except Exception as e:
