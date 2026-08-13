@@ -1,5 +1,5 @@
 """
-Activity log.
+Activity log and clock events.
 """
 from .connection import get_db_connection, get_cursor
 
@@ -25,3 +25,24 @@ class Database:
                 LIMIT ?
             """, (limit,))
             return [dict(row) for row in cursor.fetchall()]
+
+    # =====================================================================
+    # CLOCK EVENTS (for employee shift management)
+    # =====================================================================
+    @staticmethod
+    def clock_in(user_id, notes=""):
+        """Record a clock-in event for a user."""
+        with get_cursor() as cursor:
+            cursor.execute("""
+                INSERT INTO clock_events (user_id, event_type, notes)
+                VALUES (?, 'clock_in', ?)
+            """, (user_id, notes))
+
+    @staticmethod
+    def clock_out(user_id, notes=""):
+        """Record a clock-out event for a user."""
+        with get_cursor() as cursor:
+            cursor.execute("""
+                INSERT INTO clock_events (user_id, event_type, notes)
+                VALUES (?, 'clock_out', ?)
+            """, (user_id, notes))
