@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ app_name }} - Table {{ table }}</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: Arial, sans-serif; background: #121212; color: #fff; padding: 20px; padding-bottom: 120px; /* space for fixed cart */ }
+        .header-title { color: #1DB954; margin-bottom: 20px; }
+        .table-subtitle { font-size: 0.6em; color: #B3B3B3; }
+
+        .category-select { width: 100%; padding: 8px; margin-bottom: 20px; background: #333; color: #fff; border: 1px solid #1DB954; border-radius: 4px; }
+
+        .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .item-card { background: #1E1E1E; border-radius: 8px; padding: 12px; display: flex; flex-direction: column; }
+        .item-name { font-weight: bold; font-size: 1em; }
+        .item-price { color: #1DB954; font-weight: bold; margin: 4px 0; }
+        .item-desc { color: #B3B3B3; font-size: 0.85em; margin: 4px 0; flex: 1; }
+        .qty-control { display: flex; align-items: center; gap: 8px; margin: 8px 0; }
+        .qty-control button { background: #1DB954; border: none; color: #fff; padding: 4px 12px; border-radius: 4px; font-size: 1.1em; cursor: pointer; }
+        .qty-control button:hover { background: #17a74b; }
+        .qty-control span { min-width: 30px; text-align: center; font-size: 1.1em; }
+        .item-actions { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+        .item-actions button { background: #535353; border: none; color: #fff; padding: 4px 10px; border-radius: 4px; font-size: 0.8em; cursor: pointer; }
+        .item-actions .add-btn { background: #1DB954; }
+        .item-actions .remove-btn { background: #E74C3C; }
+        .item-actions .discount-btn { background: #FFB74D; color: #000; }
+        .item-actions .customise-btn { background: #4a8fe0; }
+
+        /* Fixed cart at bottom */
+        #cart { position: fixed; bottom: 0; left: 0; right: 0; background: #1E1E1E; border-top: 2px solid #1DB954; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; z-index: 100; }
+        #cart-left { display: flex; align-items: center; gap: 15px; flex-wrap: wrap; }
+        #cart-right { display: flex; align-items: center; gap: 10px; }
+        #total { font-size: 1.2em; color: #1DB954; font-weight: bold; }
+        #submit { background: #1DB954; border: none; color: #fff; padding: 8px 20px; border-radius: 6px; font-size: 1em; cursor: pointer; }
+        #submit:hover { background: #17a74b; }
+        #customer_name { padding: 6px; border-radius: 4px; border: 1px solid #333; background: #333; color: #fff; width: 150px; }
+        #cart-items { display: none; } /* Hide detailed cart, just show total */
+
+        @media (max-width: 600px) {
+            .menu-grid { grid-template-columns: 1fr; }
+            #cart { flex-direction: column; align-items: stretch; gap: 8px; }
+            #cart-left, #cart-right { width: 100%; justify-content: center; }
+            #customer_name { width: 100%; }
+        }
+    </style>
+</head>
+<body data-table="{{ table }}">
+    <h1 class="header-title">Table {{ table }} <span class="table-subtitle">Scan QR to order</span></h1>
+
+    <!-- Category dropdown -->
+    <select class="category-select" id="category-select" aria-label="Category filter" onchange="filterCategory()">
+        <option value="all">All</option>
+        {% for cat in categories %}
+        <option value="{{ cat }}">{{ cat }}</option>
+        {% endfor %}
+    </select>
+
+    <div id="menu-container" class="menu-grid">
+        {% for item in menu %}
+        <div class="item-card" data-category="{{ item.category }}">
+            <div class="item-name">{{ item.name }}</div>
+            <div class="item-price">{{ "%.2f"|format(item.price) }} KSh</div>
+            <div class="item-desc">{{ item.description }}</div>
+            <div class="qty-control">
+                <button onclick="changeQty('{{ item.id }}', -1)">-</button>
+                <span id="qty-{{ item.id }}">0</span>
+                <button onclick="changeQty('{{ item.id }}', 1)">+</button>
+            </div>
+            <div class="item-actions">
+                <button class="add-btn" onclick="addItem('{{ item.id }}')">Add</button>
+                <button class="remove-btn" onclick="removeItem('{{ item.id }}')">Remove</button>
+                <button class="discount-btn" onclick="applyDiscount()">Discount</button>
+                <button class="customise-btn" onclick="customiseItem('{{ item.id }}')">Customise</button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Fixed Cart -->
+    <div id="cart">
+        <div id="cart-left">
+            <span><strong>Your Order</strong></span>
+            <span>Total: <span id="total">0.00</span> KSh</span>
+            <input type="text" id="customer_name" placeholder="Your name (optional)">
+        </div>
+        <div id="cart-right">
+            <button id="submit" onclick="submitOrder()">Place Order</button>
+        </div>
+    </div>
+
+    <script>
+        let cart = {};
+        let currentCategory = 'all';
+
+        function changeQty(id, delta) {
+            id = parseInt(id);
+            if (!cart[id]) cart[id] = 0;
+            cart[id] = Math.max(0, cart[id] + delta);
+            document.getElementById('qty-'+id).textContent = cart[id];
+            updateTotal();
+        }
+
+        function updateTotal() {
+            let total = 0;
+            const items = document.querySelectorAll('.item-card');
+            items.forEach(el => {
+                const id = parseInt(el.querySelector('.qty-control span').id.split('-')[1]);
+                if (cart[id] > 0) {
+                    // Strip non-numeric characters (like currency) before parsing
+                    const priceText = el.querySelector('.item-price').textContent || '';
+                    const price = parseFloat(priceText.replace(/[^0-9.-]+/g, '')) || 0;
+                    total += cart[id] * price;
+                }
+            });
+            document.getElementById('total').textContent = total.toFixed(2);
+        }
+
+        function addItem(id) {
+            const qty = cart[id] || 0;
+            if (qty === 0) { alert('Please increase quantity first.'); return; }
+            // In a real implementation, this would add to order via AJAX
+            // For now, we just submit with the cart.
+            // We'll use the existing submitOrder logic.
+            // We can also directly add to the cart by calling changeQty.
+            // We'll simply trigger the place order.
+            alert('Item ' + id + ' will be added with quantity ' + qty);
+        }
+
+        function removeItem(id) {
+            // Remove one item from cart
+            if (cart[id] > 0) {
+                cart[id]--;
+                document.getElementById('qty-'+id).textContent = cart[id];
+                updateTotal();
+            }
+        }
+
+        function applyDiscount() {
+            alert('Discount button clicked – would apply discount to current order.');
+        }
+
+        function customiseItem(id) {
+            alert('Customise item ' + id + ' – would open a dialog for extras.');
+        }
+
+        function filterCategory() {
+            const select = document.getElementById('category-select');
+            currentCategory = select.value;
+            const cards = document.querySelectorAll('.item-card');
+            cards.forEach(card => {
+                const cat = card.dataset.category;
+                if (currentCategory === 'all' || cat === currentCategory) {
+                    card.style.display = 'flex';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        function submitOrder() {
+            const items = Object.keys(cart).filter(k => cart[k] > 0).map(id => ({
+                menu_item_id: parseInt(id),
+                quantity: cart[id]
+            }));
+            if (items.length === 0) {
+                alert('Please add items to your order.');
+                return;
+            }
+            const customer_name = document.getElementById('customer_name').value || 'Guest';
+            const tableId = parseInt(document.body.dataset.table);
+            fetch('/submit_order', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    table_id: tableId,
+                    items: items,
+                    customer_name: customer_name
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                alert(data.message);
+                cart = {};
+                document.querySelectorAll('.qty-control span').forEach(el => el.textContent = '0');
+                updateTotal();
+            })
+            .catch(err => alert('Error submitting order. Please try again.'));
+        }
+    </script>
+</body>
+</html>
