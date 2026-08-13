@@ -1,14 +1,15 @@
 """
 Savanna Restaurant POS System - Admin Panel & Analytics
 ========================================================
-Reporting dashboard + Manage Staff + Period Reports.
+Reporting dashboard + Manage Staff + Period Reports + Shift Log.
 """
 
 import tkinter as tk
 from tkinter import ttk, messagebox, simpledialog
 from datetime import datetime
+import sqlite3
 from database import Database
-from config import Theme, CURRENCY_SYMBOL, REPORTS_DIR, Roles
+from config import Theme, CURRENCY_SYMBOL, REPORTS_DIR, Roles, DB_PATH
 from receipt import ReceiptGenerator
 
 
@@ -52,18 +53,21 @@ class AdminPanel:
         self.payments_frame = tk.Frame(self.notebook, bg=Theme.BG_PRIMARY)
         self.staff_frame = tk.Frame(self.notebook, bg=Theme.BG_PRIMARY)
         self.period_frame = tk.Frame(self.notebook, bg=Theme.BG_PRIMARY)
+        self.shift_frame = tk.Frame(self.notebook, bg=Theme.BG_PRIMARY)
 
         self.notebook.add(self.summary_frame, text="Daily Summary")
         self.notebook.add(self.items_frame, text="Top Items")
         self.notebook.add(self.payments_frame, text="Payment Methods")
         self.notebook.add(self.staff_frame, text="Manage Staff")
         self.notebook.add(self.period_frame, text="Period Reports")
+        self.notebook.add(self.shift_frame, text="Shift Log")
 
         self.build_summary_tab()
         self.build_items_tab()
         self.build_payments_tab()
         self.build_staff_tab()
         self.build_period_tab()
+        self.build_shift_tab()
 
     # ---- Summary Tab ----
     def build_summary_tab(self):
@@ -146,17 +150,19 @@ class AdminPanel:
         tk.Label(frame, text="Manage Staff", bg=Theme.BG_PRIMARY, fg=Theme.ACCENT_GOLD,
                 font=(Theme.FONT_FAMILY, Theme.FONT_SIZE_LARGE, "bold")).pack(anchor="w", padx=20, pady=10)
 
-        columns = ("id", "username", "full_name", "email", "role")
+        columns = ("id", "username", "full_name", "email", "phone", "role")
         self.staff_tree = ttk.Treeview(frame, columns=columns, show="headings", height=10, style="Custom.Treeview")
         self.staff_tree.heading("id", text="ID")
         self.staff_tree.heading("username", text="Username")
         self.staff_tree.heading("full_name", text="Full Name")
         self.staff_tree.heading("email", text="Email")
+        self.staff_tree.heading("phone", text="Phone")
         self.staff_tree.heading("role", text="Role")
         self.staff_tree.column("id", width=50)
         self.staff_tree.column("username", width=120)
         self.staff_tree.column("full_name", width=150)
         self.staff_tree.column("email", width=180)
+        self.staff_tree.column("phone", width=120)
         self.staff_tree.column("role", width=80)
         self.staff_tree.pack(fill="both", expand=True, padx=20, pady=10)
 
@@ -181,8 +187,8 @@ class AdminPanel:
         for item in self.staff_tree.get_children():
             self.staff_tree.delete(item)
         users = Database.get_all_users()
-        for u in users:
-            self.staff_tree.insert("", "end", values=(u["id"], u["username"], u["full_name"], u["email"], u["role"]))
+        for u in sorted(users, key=lambda x: x["id"]):
+            self.staff_tree.insert("", "end", values=(u["id"], u["username"], u["full_name"], u["email"], u.get("phone", ""), u["role"]))
 
     def edit_user(self):
         selection = self.staff_tree.selection()
@@ -194,12 +200,13 @@ class AdminPanel:
         current_username = values[1]
         current_fullname = values[2]
         current_email = values[3]
-        current_role = values[4]
+        current_phone = values[4] if len(values) > 4 else ""
+        current_role = values[5] if len(values) > 5 else "waiter"
 
         dialog = tk.Toplevel(self.frame)
         dialog.title("Edit User")
         dialog.configure(bg=Theme.BG_SECONDARY)
-        dialog.geometry("350x300")
+        dialog.geometry("350x350")
         dialog.transient(self.frame)
         dialog.grab_set()
 
@@ -218,6 +225,11 @@ class AdminPanel:
         email_entry.insert(0, current_email if current_email else "")
         email_entry.pack(pady=5, padx=20, fill="x")
 
+        tk.Label(dialog, text="Phone:", bg=Theme.BG_SECONDARY, fg=Theme.TEXT_SECONDARY).pack(pady=(10,0))
+        phone_entry = tk.Entry(dialog, bg=Theme.BG_INPUT, fg=Theme.TEXT_PRIMARY, font=(Theme.FONT_FAMILY, Theme.FONT_SIZE_NORMAL))
+        phone_entry.insert(0, current_phone)
+        phone_entry.pack(pady=5, padx=20, fill="x")
+
         tk.Label(dialog, text="Role:", bg=Theme.BG_SECONDARY, fg=Theme.TEXT_SECONDARY).pack(pady=(10,0))
         role_combo = ttk.Combobox(dialog, values=Roles.ALL, state="readonly")
         role_combo.set(current_role)
@@ -227,13 +239,14 @@ class AdminPanel:
             new_username = username_entry.get().strip()
             new_fullname = fullname_entry.get().strip()
             new_email = email_entry.get().strip()
+            new_phone = phone_entry.get().strip()
             new_role = role_combo.get()
             if not new_username or not new_fullname:
                 messagebox.showerror("Error", "Username and Full Name are required.")
                 return
             try:
                 Database.update_user(user_id, username=new_username, full_name=new_fullname,
-                                     email=new_email, role=new_role)
+                                     email=new_email, phone=new_phone, role=new_role)
                 self.load_staff()
                 if int(user_id) == self.current_user["id"] and self.refresh_callback:
                     self.refresh_callback()
@@ -337,6 +350,62 @@ class AdminPanel:
             self.period_tree.delete(item)
         for entry in data:
             self.period_tree.insert("", "end", values=(entry["label"], f"{CURRENCY_SYMBOL} {entry['revenue']:,.2f}"))
+
+    # ---- Shift Log Tab ----
+    def build_shift_tab(self):
+        frame = self.shift_frame
+        tk.Label(frame, text="Employee Shift Log", bg=Theme.BG_PRIMARY, fg=Theme.ACCENT_GOLD,
+                font=(Theme.FONT_FAMILY, Theme.FONT_SIZE_LARGE, "bold")).pack(anchor="w", padx=20, pady=10)
+
+        tree_frame = tk.Frame(frame, bg=Theme.BG_PRIMARY)
+        tree_frame.pack(fill="both", expand=True, padx=20, pady=10)
+        scrollbar = ttk.Scrollbar(tree_frame, orient="vertical")
+        scrollbar.pack(side="right", fill="y")
+        columns = ("user", "event", "timestamp", "notes")
+        self.shift_tree = ttk.Treeview(tree_frame, columns=columns, show="headings",
+                                       height=12, style="Custom.Treeview",
+                                       yscrollcommand=scrollbar.set)
+        self.shift_tree.pack(side="left", fill="both", expand=True)
+        scrollbar.config(command=self.shift_tree.yview)
+        self.shift_tree.heading("user", text="Employee")
+        self.shift_tree.heading("event", text="Event")
+        self.shift_tree.heading("timestamp", text="Timestamp")
+        self.shift_tree.heading("notes", text="Notes")
+        self.shift_tree.column("user", width=150)
+        self.shift_tree.column("event", width=100)
+        self.shift_tree.column("timestamp", width=180)
+        self.shift_tree.column("notes", width=200)
+
+        btn_frame = tk.Frame(frame, bg=Theme.BG_PRIMARY)
+        btn_frame.pack(pady=10)
+        tk.Button(btn_frame, text="Refresh Shift Log", command=self.load_shift_log,
+                 bg=Theme.ACCENT_SECONDARY, fg=Theme.TEXT_ON_ACCENT,
+                 font=(Theme.FONT_FAMILY, Theme.FONT_SIZE_NORMAL), padx=10).pack()
+
+        self.load_shift_log()
+
+    def load_shift_log(self):
+        for item in self.shift_tree.get_children():
+            self.shift_tree.delete(item)
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT ce.event_type, ce.timestamp, ce.notes, u.full_name
+            FROM clock_events ce
+            JOIN users u ON ce.user_id = u.id
+            ORDER BY ce.timestamp DESC
+            LIMIT 200
+        """)
+        rows = cursor.fetchall()
+        conn.close()
+        for row in rows:
+            self.shift_tree.insert("", "end", values=(
+                row["full_name"],
+                row["event_type"].replace("_", " ").title(),
+                row["timestamp"][:19],
+                row["notes"] or ""
+            ))
 
     # ---- Reports ----
     def load_daily_report(self):
