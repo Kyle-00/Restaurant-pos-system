@@ -5,10 +5,11 @@ Modern landing dashboard showing system overview, quick stats, and navigation.
 """
 
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, messagebox
+import sqlite3
 from datetime import datetime
 from database import Database
-from config import Theme, APP_NAME, CURRENCY_SYMBOL, Roles
+from config import Theme, APP_NAME, CURRENCY_SYMBOL, Roles, DB_PATH
 from styles import StyleManager, ScrollableFrame
 
 class LandingPage:
@@ -46,7 +47,7 @@ class LandingPage:
         scroll_frame.pack(fill="both", expand=True, padx=20, pady=20)
         content = scroll_frame.scrollable_frame
 
-        # Stats – for waiters, show only their own revenue
+        # Stats Row
         stats_frame = tk.Frame(content, bg=Theme.BG_PRIMARY)
         stats_frame.pack(fill="x", pady=(0, 20))
         stats_data = self.get_today_stats()
@@ -60,6 +61,27 @@ class LandingPage:
             card = self.create_stat_card(stats_frame, title, value, color)
             card.pack(side="left", fill="both", expand=True, padx=5)
 
+        # Clock‑in/out section for waiters and chefs
+        role = self.current_user["role"]
+        if role in [Roles.WAITER, Roles.CHEF]:
+            clock_frame = tk.Frame(content, bg=Theme.BG_SECONDARY, padx=15, pady=10)
+            clock_frame.pack(fill="x", pady=(0, 20))
+
+            tk.Label(clock_frame, text="Shift Management", bg=Theme.BG_SECONDARY, fg=Theme.ACCENT_GOLD,
+                    font=(Theme.FONT_FAMILY, Theme.FONT_SIZE_MEDIUM, "bold")).pack(anchor="w")
+
+            self.clock_status_label = tk.Label(clock_frame, text="Status: Not clocked in", bg=Theme.BG_SECONDARY,
+                                               fg=Theme.TEXT_SECONDARY, font=(Theme.FONT_FAMILY, Theme.FONT_SIZE_NORMAL))
+            self.clock_status_label.pack(anchor="w", pady=(5, 5))
+
+            self.clock_btn = tk.Button(clock_frame, text="Clock In", command=self.toggle_clock,
+                                      bg=Theme.ACCENT_SUCCESS, fg=Theme.TEXT_ON_ACCENT,
+                                      font=(Theme.FONT_FAMILY, Theme.FONT_SIZE_NORMAL, "bold"),
+                                      relief="flat", cursor="hand2", padx=10, pady=3)
+            self.clock_btn.pack(anchor="w")
+
+            self.update_clock_status()
+
         # Navigation Modules
         modules_frame = tk.Frame(content, bg=Theme.BG_PRIMARY)
         modules_frame.pack(fill="x", pady=20)
@@ -68,7 +90,7 @@ class LandingPage:
                 font=(Theme.FONT_FAMILY, Theme.FONT_SIZE_LARGE, "bold")).pack(anchor="w", pady=(0, 15))
         modules_grid = tk.Frame(modules_frame, bg=Theme.BG_PRIMARY)
         modules_grid.pack(fill="x")
-        role = self.current_user["role"]
+
         modules = []
         if role in [Roles.ADMIN, Roles.WAITER]:
             modules.append(("Table Floor Plan", "Manage tables and take orders", "tables", Theme.TABLE_FREE))
@@ -138,6 +160,34 @@ class LandingPage:
             }
         except Exception:
             return {"revenue": 0, "active_orders": 0, "occupied": 0, "total_tables": 20, "completed": 0}
+
+    def update_clock_status(self):
+        """Check if user is currently clocked in (no clock‑out since last clock‑in)."""
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT event_type FROM clock_events
+            WHERE user_id = ?
+            ORDER BY timestamp DESC
+            LIMIT 1
+        """, (self.current_user["id"],))
+        row = cursor.fetchone()
+        conn.close()
+        if row and row[0] == "clock_in":
+            self.clock_status_label.config(text="Status: Clocked in", fg=Theme.ACCENT_SUCCESS)
+            self.clock_btn.config(text="Clock Out", bg=Theme.ACCENT_DANGER)
+        else:
+            self.clock_status_label.config(text="Status: Not clocked in", fg=Theme.TEXT_SECONDARY)
+            self.clock_btn.config(text="Clock In", bg=Theme.ACCENT_SUCCESS)
+
+    def toggle_clock(self):
+        if self.clock_btn.cget("text") == "Clock In":
+            Database.clock_in(self.current_user["id"])
+            messagebox.showinfo("Clocked In", "You have clocked in.")
+        else:
+            Database.clock_out(self.current_user["id"])
+            messagebox.showinfo("Clocked Out", "You have clocked out.")
+        self.update_clock_status()
 
     def update_time(self):
         now = datetime.now().strftime("%A, %d %B %Y | %I:%M %p")
