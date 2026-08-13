@@ -1,0 +1,16 @@
+# Savanna Restaurant POS System - Dependencies
+# ==============================================
+# Python 3.8+ required
+# All other dependencies are part of Python Standard Library:
+# - tkinter (GUI)
+# - sqlite3 (Database)
+# - hashlib, secrets (Security)
+# - datetime, os, json (Utilities)
+# - flask
+# - qrcode
+
+# Optional: For enhanced chart rendering (currently using Canvas)
+# matplotlib>=3.5.0
+
+# No external pip packages required for basic operation.
+# Simply run: python main.py
