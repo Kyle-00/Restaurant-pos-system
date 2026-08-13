@@ -31,7 +31,7 @@ SERVICE_CHARGE_RATE = 0.0 # 0% service charge
 # =============================================================================
 # PAYMENT INSTRUCTIONS (for bills)
 # =============================================================================
-TILL_NUMBER = "123456"   
+TILL_NUMBER = "123456"
 
 # =============================================================================
 # THEME – Spotify‑inspired dark
@@ -118,6 +118,9 @@ class Roles:
     CHEF = "chef"
     ALL = [ADMIN, WAITER, CHEF]
 
+    # Roles allowed for self-registration (admin only via Manage Staff)
+    REGISTRATION_ROLES = [WAITER, CHEF]
+
     PERMISSIONS = {
         ADMIN: ["all"],
         WAITER: ["tables", "orders", "billing", "menu_view"],
@@ -149,150 +152,156 @@ SPLIT_TYPES = {
 }
 
 # =============================================================================
-# DEFAULT DATA (real menu)
+# DEFAULT DATA – categories and items (alphabetical order)
 # =============================================================================
 DEFAULT_CATEGORIES = [
-    ("Starters", "Appetizers and small plates"),
+    ("Alcoholic Drinks", "Whisky, tequila, cognac, and other spirits"),
+    ("Beverages - Cold", "Juices, sodas, and cold refreshments"),
+    ("Beverages - Hot", "Coffee, tea, and hot drinks"),
+    ("Cocktails", "Signature alcoholic cocktails"),
+    ("Desserts", "Sweet treats and pastries"),
     ("Main Course - African", "Hearty Kenyan and East African meals"),
     ("Main Course - International", "Global cuisines"),
-    ("Seafood", "Fresh fish, prawns, lobster, and more"),
+    ("Mocktails", "Non-alcoholic signature drinks"),
     ("Pasta", "Italian pasta dishes"),
-    ("Pizza", "Wood‑fired pizzas with various toppings"),
+    ("Pizza", "Wood-fired pizzas with various toppings"),
+    ("Seafood", "Fresh fish, prawns, lobster, and more"),
     ("Sides", "Accompaniments and extras"),
-    ("Desserts", "Sweet treats and pastries"),
-    ("Beverages - Hot", "Coffee, tea, and hot drinks"),
-    ("Beverages - Cold", "Juices, sodas, and cold refreshments"),
-    ("Cocktails & Mocktails", "Signature cocktails and non‑alcoholic mocktails"),
-    ("Alcoholic Drinks", "Whisky, tequila, cognac, and other spirits"),
+    ("Specials", "Chef's seasonal specials"),
+    ("Starters", "Appetizers and small plates"),
     ("Wines", "Red, white, and rosé wines"),
-    ("Specials", "Chef's seasonal specials")
 ]
 
 DEFAULT_ITEMS = [
-    # Starters
-    ("Starters", "Samosa (1 pc)", "Crispy Kenyan samosa with chutney", 70, False, True),
-    ("Starters", "Samosa (3 pcs)", "Crispy Kenyan samosas with chutney", 200, False, True),
-    ("Starters", "Soup of the Day (Bowl)", "Chef's fresh seasonal soup", 350, True, True),
-    ("Starters", "Bruschetta (2 pcs)", "Grilled bread with tomato and basil", 550, True, False),
-    ("Starters", "Chicken Wings (6 pcs)", "Spicy buffalo wings with dip", 650, False, True),
-    ("Starters", "Spring Rolls (4 pcs)", "Vegetable spring rolls with sweet chilli", 480, True, True),
+    # Alcoholic Drinks
+    ("Alcoholic Drinks", "Don Julio Blanco (Bottle)", "Tequila", 7000, False, True),
+    ("Alcoholic Drinks", "Don Julio Blanco (Shot)", "Tequila", 600, False, True),
+    ("Alcoholic Drinks", "Gilbeys Gin (Bottle)", "London dry gin", 3800, False, True),
+    ("Alcoholic Drinks", "Gilbeys Gin (Shot)", "London dry gin", 300, False, True),
+    ("Alcoholic Drinks", "Grants Whisky (Bottle)", "Blended Scotch whisky", 4500, False, True),
+    ("Alcoholic Drinks", "Grants Whisky (Shot)", "Blended Scotch whisky", 500, False, True),
+    ("Alcoholic Drinks", "Hennessy VS (Bottle)", "Cognac", 8500, False, True),
+    ("Alcoholic Drinks", "Hennessy VS (Shot)", "Cognac", 600, False, True),
+    ("Alcoholic Drinks", "Johnnie Walker Black Label (Bottle)", "Blended Scotch whisky", 6500, False, True),
+    ("Alcoholic Drinks", "Johnnie Walker Black Label (Shot)", "Blended Scotch whisky", 500, False, True),
+    ("Alcoholic Drinks", "Jose Cuervo (Bottle)", "Tequila", 5000, False, True),
+    ("Alcoholic Drinks", "Jose Cuervo (Shot)", "Tequila", 500, False, True),
+    ("Alcoholic Drinks", "St. Remy VSOP (Bottle)", "French brandy", 6800, False, True),
+    ("Alcoholic Drinks", "St. Remy VSOP (Shot)", "French brandy", 600, False, True),
+
+    # Beverages - Cold
+    ("Beverages - Cold", "Bottled Water (1L)", "Mineral water", 300, True, True),
+    ("Beverages - Cold", "Bottled Water (500ml)", "Mineral water", 150, True, True),
+    ("Beverages - Cold", "Fresh Juice (1L)", "Orange, mango, or passion", 800, True, True),
+    ("Beverages - Cold", "Fresh Juice (500ml)", "Orange, mango, or passion", 450, True, True),
+    ("Beverages - Cold", "Milkshake", "Chocolate, vanilla, or strawberry", 500, True, True),
+    ("Beverages - Cold", "Smoothie", "Mixed fruit smoothie", 450, True, True),
+    ("Beverages - Cold", "Soda (Bottle 500ml)", "Coca-Cola, Fanta, Sprite", 200, True, True),
+    ("Beverages - Cold", "Soda (Can)", "Coca-Cola, Fanta, Sprite", 150, True, True),
+
+    # Beverages - Hot
+    ("Beverages - Hot", "Cappuccino", "Espresso with steamed milk", 250, True, True),
+    ("Beverages - Hot", "Coffee (Regular)", "Freshly brewed Kenyan coffee", 200, True, True),
+    ("Beverages - Hot", "Espresso", "Single shot of espresso", 150, True, True),
+    ("Beverages - Hot", "Hot Chocolate", "Rich hot chocolate with cream", 200, True, True),
+    ("Beverages - Hot", "Kenyan Tea (Pot)", "Authentic chai masala - serves 2", 300, True, True),
+
+    # Cocktails
+    ("Cocktails", "Cosmopolitan", "Vodka, Cointreau, cranberry, lime", 800, True, False),
+    ("Cocktails", "Long Island Iced Tea", "Vodka, rum, gin, tequila, triple sec, cola", 850, True, False),
+    ("Cocktails", "Margarita", "Tequila, Cointreau, lime juice", 900, True, False),
+    ("Cocktails", "Mojito", "White rum, lime, mint, soda water", 850, True, False),
+    ("Cocktails", "Old Fashioned", "Bourbon, sugar, bitters, orange zest", 750, True, False),
+    ("Cocktails", "Pina Colada", "Rum, coconut cream, pineapple juice", 850, True, False),
+
+    # Desserts
+    ("Desserts", "Brownie with Ice Cream", "Warm brownie with vanilla ice cream", 500, True, False),
+    ("Desserts", "Chocolate Cake", "Rich chocolate layer cake", 550, True, False),
+    ("Desserts", "Fruit Salad", "Seasonal fresh fruits", 400, True, True),
+    ("Desserts", "Ice Cream (Scoop)", "Vanilla, chocolate, or strawberry", 300, True, True),
+    ("Desserts", "Mandazi (2 pcs)", "Sweet fried dough", 150, True, False),
 
     # Main Course - African
-    ("Main Course - African", "Nyama Choma (Half Kg)", "Grilled goat meat with kachumbari", 1200, False, True),
-    ("Main Course - African", "Nyama Choma (Full Kg)", "Grilled goat meat with kachumbari", 2200, False, True),
-    ("Main Course - African", "Grilled Tilapia (Whole)", "Whole tilapia with ugali and sukuma", 1100, False, True),
-    ("Main Course - African", "Chicken Stew", "Tender chicken in tomato sauce with rice", 950, False, False),
     ("Main Course - African", "Beef Stir Fry", "Tender beef with vegetables and rice", 1050, False, False),
-    ("Main Course - African", "Vegetable Curry", "Mixed vegetable curry with rice", 750, True, True),
-    ("Main Course - African", "Pilau Rice (with meat)", "Aromatic Kenyan pilau with beef", 850, False, False),
-    ("Main Course - African", "Ugali & Fish", "Ugali with fried tilapia and sukuma", 1000, False, True),
+    ("Main Course - African", "Chicken Stew", "Tender chicken in tomato sauce with rice", 950, False, False),
+    ("Main Course - African", "Grilled Tilapia (Whole)", "Whole tilapia", 800, False, True),
     ("Main Course - African", "Mukimo", "Traditional mashed potatoes, maize, and beans", 600, True, True),
+    ("Main Course - African", "Nyama Choma (Full Kg)", "Grilled goat meat with kachumbari", 2200, False, True),
+    ("Main Course - African", "Nyama Choma (Half Kg)", "Grilled goat meat with kachumbari", 1200, False, True),
+    ("Main Course - African", "Pilau Rice (with meat)", "Aromatic Kenyan pilau with beef", 850, False, False),
+    ("Main Course - African", "Ugali & Fish", "Ugali with fried tilapia and sukuma", 1100, False, True),
+    ("Main Course - African", "Vegetable Curry", "Mixed vegetable curry with rice", 750, True, True),
 
     # Main Course - International
     ("Main Course - International", "Chef's Special Steak", "Premium beef with truffle sauce", 2500, False, True),
+    ("Main Course - International", "Chicken Tikka Masala", "Tandoori chicken with naan and rice", 1350, False, False),
     ("Main Course - International", "Grilled Salmon", "Atlantic salmon with lemon butter", 1800, False, True),
-    ("Main Course - International", "Chicken Tikka Masala", "Tandoori chicken with naan and rice", 950, False, False),
-    ("Main Course - International", "Spaghetti Bolognese", "Classic Italian pasta with meat sauce", 850, False, True),
-    ("Main Course - International", "Vegetable Lasagna", "Layered pasta with vegetables and cheese", 750, True, True),
+    ("Main Course - International", "Spaghetti Bolognese", "Classic Italian pasta with meat sauce", 1250, False, True),
+    ("Main Course - International", "Vegetable Lasagna", "Layered pasta with vegetables and cheese", 1300, True, True),
 
-    # Seafood
-    ("Seafood", "Grilled Lobster", "Whole lobster with garlic butter", 3500, False, True),
-    ("Seafood", "Prawns Thermidor", "King prawns in creamy sauce", 2800, False, True),
-    ("Seafood", "Calamari Fritti", "Crispy fried calamari with marinara", 1200, False, True),
-    ("Seafood", "Seafood Platter", "Lobster, prawns, calamari, and fish", 4500, False, True),
+    # Mocktails
+    ("Mocktails", "Cucumber Cooler", "Cucumber, lime, mint, soda", 450, True, True),
+    ("Mocktails", "Passion Fruit Spritzer", "Passion fruit juice, soda water, mint", 550, True, True),
+    ("Mocktails", "Pina Colada (Virgin)", "Coconut cream, pineapple juice", 500, True, True),
+    ("Mocktails", "Virgin Mary", "Tomato juice, spices, celery", 450, True, True),
+    ("Mocktails", "Virgin Mojito", "Lime, mint, soda water, sugar", 450, True, True),
 
     # Pasta
-    ("Pasta", "Spaghetti Carbonara", "Classic carbonara with pancetta", 950, False, True),
-    ("Pasta", "Fettuccine Alfredo", "Creamy parmesan sauce", 850, True, True),
-    ("Pasta", "Penne Arrabbiata", "Spicy tomato sauce with chilli", 750, True, True),
-    ("Pasta", "Lasagna", "Layered pasta with meat sauce and cheese", 950, False, True),
+    ("Pasta", "Fettuccine Alfredo", "Creamy parmesan sauce", 1250, True, True),
+    ("Pasta", "Lasagna", "Layered pasta with meat sauce and cheese", 1400, False, True),
+    ("Pasta", "Penne Arrabbiata", "Spicy tomato sauce with chilli", 1550, True, True),
     ("Pasta", "Seafood Linguine", "Linguine with mixed seafood", 1200, False, True),
+    ("Pasta", "Spaghetti Carbonara", "Classic carbonara with pancetta", 1050, False, True),
 
     # Pizza
-    ("Pizza", "Margherita", "Tomato, mozzarella, basil", 850, True, True),
-    ("Pizza", "Pepperoni", "Tomato, mozzarella, pepperoni", 950, False, True),
-    ("Pizza", "Hawaiian", "Tomato, mozzarella, ham, pineapple", 950, False, True),
+    ("Pizza", "Hawaiian", "Tomato, mozzarella, ham, pineapple", 1050, False, True),
+    ("Pizza", "Margherita", "Tomato, mozzarella, basil", 1000, True, True),
+    ("Pizza", "Pepperoni", "Tomato, mozzarella, pepperoni", 1150, False, True),
     ("Pizza", "Seafood Pizza", "Tomato, mozzarella, prawns, calamari", 1200, False, True),
-    ("Pizza", "Vegetarian Supreme", "Tomato, mozzarella, mixed vegetables", 850, True, True),
+    ("Pizza", "Vegetarian Supreme", "Tomato, mozzarella, mixed vegetables", 950, True, True),
+
+    # Seafood
+    ("Seafood", "Calamari Fritti", "Crispy fried calamari with marinara", 2200, False, True),
+    ("Seafood", "Grilled Lobster", "Whole lobster with garlic butter", 3500, False, True),
+    ("Seafood", "Prawns Thermidor", "King prawns in creamy sauce", 2800, False, True),
+    ("Seafood", "Seafood Platter", "Lobster, prawns, calamari, and fish", 5000, False, True),
 
     # Sides
-    ("Sides", "Ugali (Plate)", "Traditional Kenyan maize meal", 150, True, True),
-    ("Sides", "Sukuma Wiki", "Collard greens with tomatoes", 200, True, True),
-    ("Sides", "Chapati (1 pc)", "Soft layered flatbread", 100, True, False),
+    ("Sides", "Chapati (1 pc)", "Soft layered flatbread", 50, True, False),
     ("Sides", "Chips", "Crispy French fries", 250, True, True),
-    ("Sides", "Mashed Potatoes", "Creamy mashed potatoes", 250, True, True),
-    ("Sides", "Coleslaw", "Fresh cabbage and carrot salad", 180, True, True),
+    ("Sides", "Coleslaw", "Fresh cabbage and carrot salad", 150, True, True),
     ("Sides", "Garlic Bread", "Toasted bread with garlic butter", 150, True, True),
-
-    # Desserts
-    ("Desserts", "Mandazi (2 pcs)", "Sweet fried dough", 150, True, False),
-    ("Desserts", "Fruit Salad", "Seasonal fresh fruits", 400, True, True),
-    ("Desserts", "Chocolate Cake", "Rich chocolate layer cake", 550, True, False),
-    ("Desserts", "Ice Cream (Scoop)", "Vanilla, chocolate, or strawberry", 300, True, True),
-    ("Desserts", "Brownie with Ice Cream", "Warm brownie with vanilla ice cream", 500, True, False),
-
-    # Beverages - Hot
-    ("Beverages - Hot", "Kenyan Tea (Pot)", "Authentic chai masala – serves 2", 200, True, True),
-    ("Beverages - Hot", "Coffee (Regular)", "Freshly brewed Kenyan coffee", 200, True, True),
-    ("Beverages - Hot", "Espresso", "Single shot of espresso", 150, True, True),
-    ("Beverages - Hot", "Cappuccino", "Espresso with steamed milk", 250, True, True),
-    ("Beverages - Hot", "Hot Chocolate", "Rich hot chocolate with cream", 250, True, True),
-
-    # Beverages - Cold
-    ("Beverages - Cold", "Fresh Juice (500ml)", "Orange, mango, or passion", 250, True, True),
-    ("Beverages - Cold", "Fresh Juice (1 L)", "Orange, mango, or passion", 450, True, True),
-    ("Beverages - Cold", "Soda (Can)", "Coca-Cola, Fanta, Sprite", 150, True, True),
-    ("Beverages - Cold", "Soda (Bottle 500ml)", "Coca-Cola, Fanta, Sprite", 200, True, True),
-    ("Beverages - Cold", "Bottled Water (500ml)", "Mineral water", 100, True, True),
-    ("Beverages - Cold", "Bottled Water (1.5 L)", "Mineral water", 200, True, True),
-    ("Beverages - Cold", "Milkshake", "Chocolate, vanilla, or strawberry", 350, True, True),
-    ("Beverages - Cold", "Smoothie", "Mixed fruit smoothie", 300, True, True),
-
-    # Cocktails & Mocktails
-    ("Cocktails & Mocktails", "Mojito", "White rum, lime, mint, soda water", 550, True, False),
-    ("Cocktails & Mocktails", "Virgin Mojito", "Lime, mint, soda water, sugar", 350, True, True),
-    ("Cocktails & Mocktails", "Margarita", "Tequila, Cointreau, lime juice", 600, True, False),
-    ("Cocktails & Mocktails", "Virgin Mary", "Tomato juice, spices, celery", 350, True, True),
-    ("Cocktails & Mocktails", "Pina Colada", "Rum, coconut cream, pineapple juice", 550, True, False),
-    ("Cocktails & Mocktails", "Virgin Pina Colada", "Coconut cream, pineapple juice", 350, True, True),
-    ("Cocktails & Mocktails", "Cosmopolitan", "Vodka, Cointreau, cranberry, lime", 600, True, False),
-    ("Cocktails & Mocktails", "Cucumber Cooler", "Cucumber, lime, mint, soda", 300, True, True),
-
-    # Alcoholic Drinks
-    ("Alcoholic Drinks", "Johnnie Walker Black Label (Shot)", "Blended Scotch whisky", 700, False, True),
-    ("Alcoholic Drinks", "Johnnie Walker Black Label (Bottle)", "Blended Scotch whisky", 5500, False, True),
-    ("Alcoholic Drinks", "Hennessy VS (Shot)", "Cognac", 800, False, True),
-    ("Alcoholic Drinks", "Hennessy VS (Bottle)", "Cognac", 6500, False, True),
-    ("Alcoholic Drinks", "Don Julio Blanco (Shot)", "Tequila", 650, False, True),
-    ("Alcoholic Drinks", "Don Julio Blanco (Bottle)", "Tequila", 5200, False, True),
-    ("Alcoholic Drinks", "Jose Cuervo (Shot)", "Tequila", 500, False, True),
-    ("Alcoholic Drinks", "Jose Cuervo (Bottle)", "Tequila", 4000, False, True),
-    ("Alcoholic Drinks", "Grants Whisky (Shot)", "Blended Scotch whisky", 550, False, True),
-    ("Alcoholic Drinks", "Grants Whisky (Bottle)", "Blended Scotch whisky", 4200, False, True),
-    ("Alcoholic Drinks", "St. Remy VSOP (Shot)", "French brandy", 600, False, True),
-    ("Alcoholic Drinks", "St. Remy VSOP (Bottle)", "French brandy", 4800, False, True),
-    ("Alcoholic Drinks", "Gilbeys Gin (Shot)", "London dry gin", 500, False, True),
-    ("Alcoholic Drinks", "Gilbeys Gin (Bottle)", "London dry gin", 3800, False, True),
-
-    # Wines
-    ("Wines", "Sauvignon Blanc (Glass)", "Crisp white wine – New Zealand", 500, True, True),
-    ("Wines", "Sauvignon Blanc (Bottle)", "Crisp white wine – New Zealand", 2500, True, True),
-    ("Wines", "Chardonnay (Glass)", "Rich white wine – California", 550, True, True),
-    ("Wines", "Chardonnay (Bottle)", "Rich white wine – California", 2800, True, True),
-    ("Wines", "Cabernet Sauvignon (Glass)", "Full-bodied red wine – Napa", 600, True, True),
-    ("Wines", "Cabernet Sauvignon (Bottle)", "Full-bodied red wine – Napa", 3200, True, True),
-    ("Wines", "Merlot (Glass)", "Smooth red wine – Chile", 500, True, True),
-    ("Wines", "Merlot (Bottle)", "Smooth red wine – Chile", 2400, True, True),
-    ("Wines", "Pinot Noir (Glass)", "Light red wine – Burgundy", 550, True, True),
-    ("Wines", "Pinot Noir (Bottle)", "Light red wine – Burgundy", 2800, True, True),
-    ("Wines", "Rose (Glass)", "Dry rose – Provence", 500, True, True),
-    ("Wines", "Rose (Bottle)", "Dry rose – Provence", 2400, True, True),
+    ("Sides", "Mashed Potatoes", "Creamy mashed potatoes", 300, True, True),
+    ("Sides", "Sukuma Wiki", "Collard greens with tomatoes", 150, True, True),
+    ("Sides", "Ugali (Plate)", "Traditional Kenyan maize meal", 200, True, True),
 
     # Specials
+    ("Specials", "Duck Confit", "Slow-cooked duck leg with vegetables", 2800, False, True),
     ("Specials", "Lobster Thermidor", "Grilled lobster with creamy sauce", 3500, False, True),
     ("Specials", "Seafood Platter (Large)", "Lobster, prawns, calamari, fish", 4500, False, True),
-    ("Specials", "Duck Confit", "Slow-cooked duck leg with vegetables", 2800, False, True),
-    ("Specials", "Truffle Risotto", "Creamy risotto with truffle oil", 2200, True, True),
+    ("Specials", "Truffle Risotto", "Creamy risotto with truffle oil", 2500, True, True),
+
+    # Starters
+    ("Starters", "Bruschetta (2 pcs)", "Grilled bread with tomato and basil", 550, True, False),
+    ("Starters", "Chicken Wings (6 pcs)", "Spicy buffalo wings with dip", 650, False, True),
+    ("Starters", "Samosa (1 pc)", "Crispy Kenyan samosa with chutney", 70, False, True),
+    ("Starters", "Samosa (3 pcs)", "Crispy Kenyan samosas with chutney", 200, False, True),
+    ("Starters", "Soup of the Day (Bowl)", "Chef's fresh seasonal soup", 350, True, True),
+    ("Starters", "Spring Rolls (4 pcs)", "Vegetable spring rolls with sweet chilli", 480, True, True),
+
+    # Wines
+    ("Wines", "Cabernet Sauvignon (Bottle)", "Full-bodied red wine - Napa", 3200, True, True),
+    ("Wines", "Cabernet Sauvignon (Glass)", "Full-bodied red wine - Napa", 600, True, True),
+    ("Wines", "Chardonnay (Bottle)", "Rich white wine - California", 2800, True, True),
+    ("Wines", "Chardonnay (Glass)", "Rich white wine - California", 550, True, True),
+    ("Wines", "Merlot (Bottle)", "Smooth red wine - Chile", 3400, True, True),
+    ("Wines", "Merlot (Glass)", "Smooth red wine - Chile", 500, True, True),
+    ("Wines", "Pinot Noir (Bottle)", "Light red wine - Burgundy", 3800, True, True),
+    ("Wines", "Pinot Noir (Glass)", "Light red wine - Burgundy", 550, True, True),
+    ("Wines", "Rosé (Bottle)", "Dry rosé - Provence", 3500, True, True),
+    ("Wines", "Rosé (Glass)", "Dry rosé - Provence", 500, True, True),
+    ("Wines", "Sauvignon Blanc (Bottle)", "Crisp white wine - New Zealand", 4000, True, True),
+    ("Wines", "Sauvignon Blanc (Glass)", "Crisp white wine - New Zealand", 500, True, True),
 ]
 
 DEFAULT_TABLES = [
