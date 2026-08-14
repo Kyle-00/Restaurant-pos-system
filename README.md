@@ -92,7 +92,7 @@ Savanna POS is designed for restaurants that want a modern, efficient, and relia
 | Component | Technology | Purpose |
 | --- | --- | --- |
 | GUI Framework | Python Tkinter & ttk | Desktop interface |
-| Backend Logic | Python 3.8+ | Business logic |
+| Backend Logic | Python 3.14 | Business logic |
 | Database | SQLite (embedded) | Local data storage |
 | Database Migration | Custom versioned system | Schema upgrades |
 | Web Server | Flask | QR ordering pages |
@@ -103,7 +103,7 @@ Savanna POS is designed for restaurants that want a modern, efficient, and relia
 
 ### 1. Prerequisites
 
-- Python 3.8 or higher – [Download](https://www.python.org/downloads/)
+- Python 3.14 or higher – [Download](https://www.python.org/downloads/)
 - Git (optional) – to clone the repository
 - Internet connection (for initial package installation)
 
@@ -380,5 +380,4 @@ POS-system/
 
 ## License
 
-This project is proprietary and intended for educational/portfolio use.
-For commercial licensing, please contact the developer.
+Licensed by MIT License
