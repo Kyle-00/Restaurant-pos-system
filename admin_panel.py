@@ -1,15 +1,17 @@
 """
 Savanna Restaurant POS System - Admin Panel & Analytics
 ========================================================
-Reporting dashboard + Manage Staff + Period Reports + Shift Log.
+Reporting dashboard + Manage Staff + Period Reports + Shift Log + QR Codes.
 """
 
 import tkinter as tk
 from tkinter import ttk, messagebox, simpledialog
 from datetime import datetime
 import sqlite3
+import os
+import socket
 from database import Database
-from config import Theme, CURRENCY_SYMBOL, REPORTS_DIR, Roles, DB_PATH
+from config import Theme, CURRENCY_SYMBOL, REPORTS_DIR, Roles, DB_PATH, QR_CODES_DIR
 from receipt import ReceiptGenerator
 
 
@@ -54,6 +56,7 @@ class AdminPanel:
         self.staff_frame = tk.Frame(self.notebook, bg=Theme.BG_PRIMARY)
         self.period_frame = tk.Frame(self.notebook, bg=Theme.BG_PRIMARY)
         self.shift_frame = tk.Frame(self.notebook, bg=Theme.BG_PRIMARY)
+        self.qr_frame = tk.Frame(self.notebook, bg=Theme.BG_PRIMARY)
 
         self.notebook.add(self.summary_frame, text="Daily Summary")
         self.notebook.add(self.items_frame, text="Top Items")
@@ -61,6 +64,7 @@ class AdminPanel:
         self.notebook.add(self.staff_frame, text="Manage Staff")
         self.notebook.add(self.period_frame, text="Period Reports")
         self.notebook.add(self.shift_frame, text="Shift Log")
+        self.notebook.add(self.qr_frame, text="QR Codes")
 
         self.build_summary_tab()
         self.build_items_tab()
@@ -68,6 +72,7 @@ class AdminPanel:
         self.build_staff_tab()
         self.build_period_tab()
         self.build_shift_tab()
+        self.build_qr_tab()
 
     # ---- Summary Tab ----
     def build_summary_tab(self):
@@ -203,38 +208,49 @@ class AdminPanel:
         current_phone = values[4] if len(values) > 4 else ""
         current_role = values[5] if len(values) > 5 else "waiter"
 
+        # Larger dialog with scrollable canvas
         dialog = tk.Toplevel(self.frame)
         dialog.title("Edit User")
         dialog.configure(bg=Theme.BG_SECONDARY)
-        dialog.geometry("350x350")
+        dialog.geometry("400x480")  # increased height
         dialog.transient(self.frame)
         dialog.grab_set()
 
-        tk.Label(dialog, text="Username:", bg=Theme.BG_SECONDARY, fg=Theme.TEXT_SECONDARY).pack(pady=(10,0))
-        username_entry = tk.Entry(dialog, bg=Theme.BG_INPUT, fg=Theme.TEXT_PRIMARY, font=(Theme.FONT_FAMILY, Theme.FONT_SIZE_NORMAL))
+        # Main frame to hold all widgets
+        main_frame = tk.Frame(dialog, bg=Theme.BG_SECONDARY)
+        main_frame.pack(fill="both", expand=True, padx=10, pady=10)
+
+        # Username
+        tk.Label(main_frame, text="Username:", bg=Theme.BG_SECONDARY, fg=Theme.TEXT_SECONDARY).pack(anchor="w", pady=(5,0))
+        username_entry = tk.Entry(main_frame, bg=Theme.BG_INPUT, fg=Theme.TEXT_PRIMARY, font=(Theme.FONT_FAMILY, Theme.FONT_SIZE_NORMAL))
         username_entry.insert(0, current_username)
-        username_entry.pack(pady=5, padx=20, fill="x")
+        username_entry.pack(fill="x", pady=5)
 
-        tk.Label(dialog, text="Full Name:", bg=Theme.BG_SECONDARY, fg=Theme.TEXT_SECONDARY).pack(pady=(10,0))
-        fullname_entry = tk.Entry(dialog, bg=Theme.BG_INPUT, fg=Theme.TEXT_PRIMARY, font=(Theme.FONT_FAMILY, Theme.FONT_SIZE_NORMAL))
+        # Full Name
+        tk.Label(main_frame, text="Full Name:", bg=Theme.BG_SECONDARY, fg=Theme.TEXT_SECONDARY).pack(anchor="w", pady=(5,0))
+        fullname_entry = tk.Entry(main_frame, bg=Theme.BG_INPUT, fg=Theme.TEXT_PRIMARY, font=(Theme.FONT_FAMILY, Theme.FONT_SIZE_NORMAL))
         fullname_entry.insert(0, current_fullname)
-        fullname_entry.pack(pady=5, padx=20, fill="x")
+        fullname_entry.pack(fill="x", pady=5)
 
-        tk.Label(dialog, text="Email:", bg=Theme.BG_SECONDARY, fg=Theme.TEXT_SECONDARY).pack(pady=(10,0))
-        email_entry = tk.Entry(dialog, bg=Theme.BG_INPUT, fg=Theme.TEXT_PRIMARY, font=(Theme.FONT_FAMILY, Theme.FONT_SIZE_NORMAL))
+        # Email
+        tk.Label(main_frame, text="Email:", bg=Theme.BG_SECONDARY, fg=Theme.TEXT_SECONDARY).pack(anchor="w", pady=(5,0))
+        email_entry = tk.Entry(main_frame, bg=Theme.BG_INPUT, fg=Theme.TEXT_PRIMARY, font=(Theme.FONT_FAMILY, Theme.FONT_SIZE_NORMAL))
         email_entry.insert(0, current_email if current_email else "")
-        email_entry.pack(pady=5, padx=20, fill="x")
+        email_entry.pack(fill="x", pady=5)
 
-        tk.Label(dialog, text="Phone:", bg=Theme.BG_SECONDARY, fg=Theme.TEXT_SECONDARY).pack(pady=(10,0))
-        phone_entry = tk.Entry(dialog, bg=Theme.BG_INPUT, fg=Theme.TEXT_PRIMARY, font=(Theme.FONT_FAMILY, Theme.FONT_SIZE_NORMAL))
+        # Phone
+        tk.Label(main_frame, text="Phone:", bg=Theme.BG_SECONDARY, fg=Theme.TEXT_SECONDARY).pack(anchor="w", pady=(5,0))
+        phone_entry = tk.Entry(main_frame, bg=Theme.BG_INPUT, fg=Theme.TEXT_PRIMARY, font=(Theme.FONT_FAMILY, Theme.FONT_SIZE_NORMAL))
         phone_entry.insert(0, current_phone)
-        phone_entry.pack(pady=5, padx=20, fill="x")
+        phone_entry.pack(fill="x", pady=5)
 
-        tk.Label(dialog, text="Role:", bg=Theme.BG_SECONDARY, fg=Theme.TEXT_SECONDARY).pack(pady=(10,0))
-        role_combo = ttk.Combobox(dialog, values=Roles.ALL, state="readonly")
+        # Role
+        tk.Label(main_frame, text="Role:", bg=Theme.BG_SECONDARY, fg=Theme.TEXT_SECONDARY).pack(anchor="w", pady=(5,0))
+        role_combo = ttk.Combobox(main_frame, values=Roles.ALL, state="readonly")
         role_combo.set(current_role)
-        role_combo.pack(pady=5, padx=20, fill="x")
+        role_combo.pack(fill="x", pady=5)
 
+        # Save button
         def save():
             new_username = username_entry.get().strip()
             new_fullname = fullname_entry.get().strip()
@@ -255,9 +271,10 @@ class AdminPanel:
             except Exception as e:
                 messagebox.showerror("Error", str(e))
 
-        tk.Button(dialog, text="Save", command=save,
+        tk.Button(main_frame, text="Save", command=save,
                  bg=Theme.ACCENT_SUCCESS, fg=Theme.TEXT_ON_ACCENT,
-                 font=(Theme.FONT_FAMILY, Theme.FONT_SIZE_NORMAL, "bold"), padx=10).pack(pady=20)
+                 font=(Theme.FONT_FAMILY, Theme.FONT_SIZE_NORMAL, "bold"),
+                 padx=10, pady=5).pack(pady=15)
 
     def change_password(self):
         selection = self.staff_tree.selection()
@@ -406,6 +423,60 @@ class AdminPanel:
                 row["timestamp"][:19],
                 row["notes"] or ""
             ))
+
+    # ---- QR Codes Tab ----
+    def build_qr_tab(self):
+        frame = self.qr_frame
+        tk.Label(frame, text="QR Code Generation", bg=Theme.BG_PRIMARY, fg=Theme.ACCENT_GOLD,
+                font=(Theme.FONT_FAMILY, Theme.FONT_SIZE_LARGE, "bold")).pack(anchor="w", padx=20, pady=10)
+
+        info_label = tk.Label(frame, text="Generate QR codes for all tables.\n"
+                                          "The images will be saved in the 'qr_codes/' folder.\n"
+                                          "You can print them and place them on tables.",
+                              bg=Theme.BG_PRIMARY, fg=Theme.TEXT_SECONDARY,
+                              font=(Theme.FONT_FAMILY, Theme.FONT_SIZE_NORMAL),
+                              justify="left")
+        info_label.pack(anchor="w", padx=20, pady=10)
+
+        # Button to generate
+        gen_btn = tk.Button(frame, text="Generate QR Codes for All Tables",
+                           command=self.generate_qr_codes,
+                           bg=Theme.ACCENT_PRIMARY, fg=Theme.TEXT_ON_ACCENT,
+                           font=(Theme.FONT_FAMILY, Theme.FONT_SIZE_NORMAL, "bold"),
+                           relief="flat", cursor="hand2", padx=20, pady=10)
+        gen_btn.pack(pady=20)
+
+        # Label to show folder path
+        self.qr_path_label = tk.Label(frame, text=f"QR codes will be saved to: {QR_CODES_DIR}",
+                                      bg=Theme.BG_PRIMARY, fg=Theme.TEXT_MUTED,
+                                      font=(Theme.FONT_FAMILY, Theme.FONT_SIZE_NORMAL))
+        self.qr_path_label.pack(pady=10)
+
+        # Button to open folder (optional)
+        open_btn = tk.Button(frame, text="Open QR Codes Folder",
+                            command=self.open_qr_folder,
+                            bg=Theme.ACCENT_SECONDARY, fg=Theme.TEXT_ON_ACCENT,
+                            font=(Theme.FONT_FAMILY, Theme.FONT_SIZE_NORMAL),
+                            relief="flat", cursor="hand2", padx=15, pady=5)
+        open_btn.pack(pady=5)
+
+    def generate_qr_codes(self):
+        try:
+            from qr_server import generate_all_qr_codes
+            host_ip = socket.gethostbyname(socket.gethostname())
+            generate_all_qr_codes(host_ip)
+            messagebox.showinfo("QR Codes Generated",
+                                f"QR codes for all tables have been generated and saved to:\n{QR_CODES_DIR}\n\n"
+                                f"URL base: http://{host_ip}:5000/table/")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to generate QR codes:\n{str(e)}")
+
+    def open_qr_folder(self):
+        import os
+        if os.path.exists(QR_CODES_DIR):
+            os.startfile(QR_CODES_DIR)  # Works on Windows; for Linux use `xdg-open`, for macOS `open`
+        else:
+            messagebox.showerror("Folder Not Found", f"The folder '{QR_CODES_DIR}' does not exist yet. Generate QR codes first.")
 
     # ---- Reports ----
     def load_daily_report(self):
