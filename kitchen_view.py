@@ -136,6 +136,7 @@ class KitchenView:
             item_frame.pack(fill="x", pady=2)
             status_colors = {"pending": Theme.ORDER_PENDING, "preparing": Theme.ORDER_PREPARING}
             status_color = status_colors.get(item["status"], Theme.TEXT_MUTED)
+
             tk.Label(item_frame, text=f"{item['quantity']}x {item['item_name']}",
                     bg=Theme.BG_TERTIARY, fg=Theme.TEXT_PRIMARY,
                     font=(Theme.FONT_FAMILY, Theme.FONT_SIZE_NORMAL, "bold")).pack(side="left")
@@ -152,19 +153,15 @@ class KitchenView:
                                    padx=8, pady=2)
             status_badge.pack(side="right")
 
-            if item["status"] == "pending" and not item.get("assigned_chef_id"):
-                # Claim button
+            # Claim: show if no chef assigned and status is pending or preparing
+            if item["status"] in ("pending", "preparing") and not item.get("assigned_chef_id"):
                 claim_btn = tk.Button(item_frame, text="Claim",
                                      command=lambda i=item: self.claim_item(i),
                                      bg=Theme.ACCENT_PRIMARY, fg=Theme.TEXT_ON_ACCENT,
                                      font=(Theme.FONT_FAMILY, Theme.FONT_SIZE_SMALL, "bold"),
                                      relief="flat", cursor="hand2", padx=10)
                 claim_btn.pack(side="right", padx=5)
-            elif item["status"] == "pending" and item.get("assigned_chef_id"):
-                tk.Label(item_frame, text=f"Assigned to {chef_name}",
-                        bg=Theme.BG_TERTIARY, fg=Theme.ACCENT_WARNING,
-                        font=(Theme.FONT_FAMILY, Theme.FONT_SIZE_SMALL)).pack(side="right", padx=5)
-            elif item["status"] == "preparing":
+            elif item["status"] == "preparing" and item.get("assigned_chef_id"):
                 ready_btn = tk.Button(item_frame, text="Ready",
                                      command=lambda i=item: self.mark_ready(i),
                                      bg=Theme.ACCENT_SUCCESS, fg=Theme.TEXT_ON_ACCENT,
