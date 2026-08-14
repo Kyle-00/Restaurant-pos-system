@@ -8,7 +8,7 @@ import sqlite3
 from config import DB_PATH
 
 SCHEMA_VERSION_TABLE = "schema_version"
-CURRENT_VERSION = 6
+CURRENT_VERSION = 7  # bumped to 7
 
 def get_schema_version(conn):
     cursor = conn.cursor()
@@ -21,7 +21,9 @@ def get_schema_version(conn):
 
 def set_schema_version(conn, version):
     cursor = conn.cursor()
-    cursor.execute(f"CREATE TABLE IF NOT EXISTS {SCHEMA_VERSION_TABLE} (version INTEGER PRIMARY KEY, applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
+    cursor.execute(
+        f"CREATE TABLE IF NOT EXISTS {SCHEMA_VERSION_TABLE} (version INTEGER PRIMARY KEY, applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)"
+    )
     cursor.execute(f"INSERT INTO {SCHEMA_VERSION_TABLE} (version) VALUES (?)", (version,))
     conn.commit()
 
@@ -31,11 +33,12 @@ def run_migrations():
     current = get_schema_version(conn)
 
     if current < 1:
+        # Version 1: initial tables (already created by init_database)
         set_schema_version(conn, 1)
         current = 1
 
     if current < 2:
-        # combo_meals and combo_items
+        # Version 2: combo_meals and combo_items
         conn.execute("""
             CREATE TABLE IF NOT EXISTS combo_meals (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -60,6 +63,7 @@ def run_migrations():
         current = 2
 
     if current < 3:
+        # Version 3: order_customisations and customisations column in order_items
         conn.execute("""
             CREATE TABLE IF NOT EXISTS order_customisations (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -78,6 +82,7 @@ def run_migrations():
         current = 3
 
     if current < 4:
+        # Version 4: employee_schedule and clock_events
         conn.execute("""
             CREATE TABLE IF NOT EXISTS employee_schedule (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -103,6 +108,7 @@ def run_migrations():
         current = 4
 
     if current < 5:
+        # Version 5: settings table
         conn.execute("""
             CREATE TABLE IF NOT EXISTS settings (
                 key TEXT PRIMARY KEY,
@@ -132,7 +138,7 @@ def run_migrations():
         current = 5
 
     if current < 6:
-        # Add assigned_chef_id to order_items
+        # Version 6: add assigned_chef_id to order_items
         try:
             conn.execute("ALTER TABLE order_items ADD COLUMN assigned_chef_id INTEGER REFERENCES users(id)")
             print("Added assigned_chef_id column to order_items")
@@ -141,6 +147,17 @@ def run_migrations():
                 raise
         set_schema_version(conn, 6)
         current = 6
+
+    if current < 7:
+        # Version 7: add phone column to users table
+        try:
+            conn.execute("ALTER TABLE users ADD COLUMN phone TEXT")
+            print("Added phone column to users table")
+        except sqlite3.OperationalError as e:
+            if "duplicate column name" not in str(e):
+                raise
+        set_schema_version(conn, 7)
+        current = 7
 
     conn.close()
     print(f"Database schema is at version {current} (current target: {CURRENT_VERSION})")
