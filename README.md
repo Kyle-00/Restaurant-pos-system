@@ -34,7 +34,7 @@ Savanna POS is designed for restaurants that want a modern, efficient, and relia
 
 - Role-based access – Admins, waiters, and chefs each see only the modules they need.
 - Staff management – Add, edit, delete users; change passwords (admin only).
-- Clock-in / Clock-out – Track employee working hours (optional).
+- Clock-in / Clock-out – Track employee working hours.
 
 ### Table Management
 
@@ -47,8 +47,6 @@ Savanna POS is designed for restaurants that want a modern, efficient, and relia
 - Rich menu browser – Browse categories and items with descriptions and prices.
 - Quantity controls – Increase/decrease quantity per item.
 - Special requests – Add notes to any item.
-- Item customisation – Add extras (e.g., extra cheese, spice level) with additional cost.
-- Combo discounts – Automatically apply a discount when a predefined bundle is ordered.
 - Discounts – Apply a percentage discount to the entire order.
 
 ### Kitchen Display (KDS)
@@ -56,7 +54,6 @@ Savanna POS is designed for restaurants that want a modern, efficient, and relia
 - Live order queue – Shows all pending and preparing orders.
 - Chef claiming – A chef can claim an item, assigning it to themselves and automatically setting its status to "preparing".
 - Ready notifications – Chefs mark items as ready; waiters see a badge with the count of ready items.
-- Prep timer (optional) – Displays expected vs. elapsed time (can be disabled).
 
 ### Billing & Payment
 
@@ -83,7 +80,6 @@ Savanna POS is designed for restaurants that want a modern, efficient, and relia
 ### Administration
 
 - Menu editor – Add, edit, delete categories and items; toggle availability.
-- Theme customisation – Change colours via the database (no code changes required).
 - Automated backups – Daily database backups (retention: 30 days).
 - Migrations – Update the database schema without losing data.
 
@@ -183,7 +179,7 @@ Once logged in, follow these steps to set up your restaurant:
    - Edit `config.py` to change `TAX_RATE` (default 10%) and `TILL_NUMBER` (appears on bills).
 
 4. **Generate QR Codes for Tables**
-   - If you plan to use QR ordering, go to Reports → Settings (if present) or run the QR generation script manually:
+   - If you plan to use QR ordering, go to Reports → Qr Codes or run the QR generation script manually:
 
      ```python
      from qr_server import generate_all_qr_codes
@@ -244,10 +240,6 @@ You can set the following environment variables to override default paths:
 - `DB_PATH` – full path to the database file
 - `BACKUPS_DIR` – where backups are stored
 - `QR_SERVER_PORT` – port for the QR server (default 5000)
-
-### Changing the Theme
-
-Colours are stored in the `settings` table. You can modify them via a SQLite browser or implement a settings UI (the code includes a Settings tab that can be enabled).
 
 ### Adding New Features
 
