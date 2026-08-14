@@ -11,6 +11,7 @@ import os
 from database import Database
 from config import Theme, CURRENCY_SYMBOL, PAYMENT_METHODS, SPLIT_TYPES, RECEIPTS_DIR, TAX_RATE, SERVICE_CHARGE_RATE
 from receipt import ReceiptGenerator
+from styles import ScrollableFrame
 
 
 class BillingSystem:
@@ -94,10 +95,15 @@ class BillingSystem:
                                     font=(Theme.FONT_FAMILY, Theme.FONT_SIZE_XL, "bold"))
         self.bill_total.pack(anchor="e", pady=(5, 0))
 
-        # Right: Payment panel
-        payment_frame = tk.Frame(content, bg=Theme.BG_SECONDARY, width=400)
-        payment_frame.pack(side="right", fill="both", expand=True, padx=(5, 0))
-        payment_frame.pack_propagate(False)
+        # Right: Payment panel with scroll
+        payment_container = tk.Frame(content, bg=Theme.BG_SECONDARY, width=400)
+        payment_container.pack(side="right", fill="both", expand=True, padx=(5, 0))
+        payment_container.pack_propagate(False)
+
+        payment_scroll = ScrollableFrame(payment_container)
+        payment_scroll.pack(fill="both", expand=True)
+        payment_frame = payment_scroll.scrollable_frame
+        payment_frame.configure(bg=Theme.BG_SECONDARY)
 
         tk.Label(payment_frame, text="Payment",
                 bg=Theme.BG_SECONDARY, fg=Theme.ACCENT_GOLD,
@@ -333,7 +339,6 @@ class BillingSystem:
                  font=(Theme.FONT_FAMILY, Theme.FONT_SIZE_NORMAL, "bold"),
                  relief="flat", cursor="hand2", padx=20, pady=10).pack(pady=10)
 
-        # Remove order from active list after receipt is printed
         self.load_unpaid_orders()
         self.payment_done = False
         self.receipt_btn.config(state="disabled")
