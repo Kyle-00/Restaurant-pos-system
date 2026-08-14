@@ -25,7 +25,7 @@ app.config['SECRET_KEY'] = 'dev-key-change-in-production'
 
 
 def ensure_pending_table():
-    """Create the pending_web_orders table if it doesn't exist."""
+    """Create the pending_web_orders table if it doesn't exist, and add any missing columns."""
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute("""
@@ -34,10 +34,16 @@ def ensure_pending_table():
             table_id INTEGER,
             customer_name TEXT,
             items_json TEXT,
+            special_requests TEXT,
             status TEXT DEFAULT 'pending',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
+    # Add special_requests column if missing (for older databases)
+    try:
+        cursor.execute("ALTER TABLE pending_web_orders ADD COLUMN special_requests TEXT")
+    except sqlite3.OperationalError:
+        pass  # column already exists
     conn.commit()
     conn.close()
 
@@ -67,8 +73,9 @@ def index():
 def table_order(table_id):
     menu = get_menu()
     # Get unique categories from menu items
-    categories = list(set(item['category'] for item in menu))
+    categories = sorted(set(item['category'] for item in menu))
     return render_template('order.html', table=table_id, menu=menu, app_name=APP_NAME, categories=categories)
+
 
 @app.route('/submit_order', methods=['POST'])
 def submit_order():
@@ -76,13 +83,16 @@ def submit_order():
     table_id = data.get('table_id')
     items = data.get('items')
     customer_name = data.get('customer_name', 'Guest')
-    # Ensure table exists
+    special_requests = data.get('special_requests', '')
+
+    # Ensure table exists and has the special_requests column
     ensure_pending_table()
+
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute(
-        "INSERT INTO pending_web_orders (table_id, customer_name, items_json) VALUES (?, ?, ?)",
-        (table_id, customer_name, json.dumps(items))
+        "INSERT INTO pending_web_orders (table_id, customer_name, items_json, special_requests) VALUES (?, ?, ?, ?)",
+        (table_id, customer_name, json.dumps(items), special_requests)
     )
     conn.commit()
     conn.close()
@@ -140,6 +150,8 @@ def sync_pending_orders():
             for p in pending:
                 # Create a real order in the system
                 table_id = p["table_id"]
+                special_requests = p.get("special_requests", "")
+
                 # We need a waiter ID – use first active waiter or admin
                 conn = sqlite3.connect(DB_PATH)
                 conn.row_factory = sqlite3.Row
@@ -152,8 +164,8 @@ def sync_pending_orders():
                 waiter_id = waiter["id"] if waiter else 1
                 conn.close()
 
-                # Create order
-                order_id = Database.create_order(table_id, waiter_id, 1, "Web order via QR")
+                # Create order with special request
+                order_id = Database.create_order(table_id, waiter_id, 1, special_requests)
                 if order_id:
                     items = json.loads(p["items_json"])
                     for itm in items:
