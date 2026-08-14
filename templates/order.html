@@ -6,51 +6,336 @@
     <title>{{ app_name }} - Table {{ table }}</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: Arial, sans-serif; background: #121212; color: #fff; padding: 20px; padding-bottom: 120px; /* space for fixed cart */ }
-        .header-title { color: #1DB954; margin-bottom: 20px; }
-        .table-subtitle { font-size: 0.6em; color: #B3B3B3; }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #0d0d0d;
+            color: #f0e6d3;
+            padding: 20px;
+            padding-bottom: 120px;
+        }
+        .header {
+            text-align: center;
+            padding: 10px 0 20px;
+            border-bottom: 1px solid #2a2a2a;
+            margin-bottom: 25px;
+        }
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: 300;
+            letter-spacing: 2px;
+            color: #d4af37;
+        }
+        .header h1 small {
+            display: block;
+            font-size: 0.6rem;
+            color: #888;
+            letter-spacing: 1px;
+            margin-top: 4px;
+        }
 
-        .category-select { width: 100%; padding: 8px; margin-bottom: 20px; background: #333; color: #fff; border: 1px solid #1DB954; border-radius: 4px; }
+        /* Category dropdown */
+        .category-select {
+            width: 100%;
+            padding: 12px 16px;
+            margin-bottom: 25px;
+            background: #1e1e1e;
+            color: #f0e6d3;
+            border: 1px solid #3a3a3a;
+            border-radius: 8px;
+            font-size: 1rem;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23d4af37' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 16px center;
+            cursor: pointer;
+        }
+        .category-select:focus {
+            outline: 2px solid #d4af37;
+            outline-offset: 2px;
+        }
 
-        .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .item-card { background: #1E1E1E; border-radius: 8px; padding: 12px; display: flex; flex-direction: column; }
-        .item-name { font-weight: bold; font-size: 1em; }
-        .item-price { color: #1DB954; font-weight: bold; margin: 4px 0; }
-        .item-desc { color: #B3B3B3; font-size: 0.85em; margin: 4px 0; flex: 1; }
-        .qty-control { display: flex; align-items: center; gap: 8px; margin: 8px 0; }
-        .qty-control button { background: #1DB954; border: none; color: #fff; padding: 4px 12px; border-radius: 4px; font-size: 1.1em; cursor: pointer; }
-        .qty-control button:hover { background: #17a74b; }
-        .qty-control span { min-width: 30px; text-align: center; font-size: 1.1em; }
-        .item-actions { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
-        .item-actions button { background: #535353; border: none; color: #fff; padding: 4px 10px; border-radius: 4px; font-size: 0.8em; cursor: pointer; }
-        .item-actions .add-btn { background: #1DB954; }
-        .item-actions .remove-btn { background: #E74C3C; }
-        .item-actions .discount-btn { background: #FFB74D; color: #000; }
-        .item-actions .customise-btn { background: #4a8fe0; }
-
-        /* Fixed cart at bottom */
-        #cart { position: fixed; bottom: 0; left: 0; right: 0; background: #1E1E1E; border-top: 2px solid #1DB954; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; z-index: 100; }
-        #cart-left { display: flex; align-items: center; gap: 15px; flex-wrap: wrap; }
-        #cart-right { display: flex; align-items: center; gap: 10px; }
-        #total { font-size: 1.2em; color: #1DB954; font-weight: bold; }
-        #submit { background: #1DB954; border: none; color: #fff; padding: 8px 20px; border-radius: 6px; font-size: 1em; cursor: pointer; }
-        #submit:hover { background: #17a74b; }
-        #customer_name { padding: 6px; border-radius: 4px; border: 1px solid #333; background: #333; color: #fff; width: 150px; }
-        #cart-items { display: none; } /* Hide detailed cart, just show total */
-
+        /* Menu grid */
+        .menu-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 30px;
+        }
         @media (max-width: 600px) {
             .menu-grid { grid-template-columns: 1fr; }
-            #cart { flex-direction: column; align-items: stretch; gap: 8px; }
-            #cart-left, #cart-right { width: 100%; justify-content: center; }
-            #customer_name { width: 100%; }
+        }
+
+        .item-card {
+            background: #1a1a1a;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+            border: 1px solid #2a2a2a;
+        }
+        .item-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(212, 175, 55, 0.1);
+            border-color: #d4af37;
+        }
+        .item-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #f0e6d3;
+            margin-bottom: 2px;
+        }
+        .item-price {
+            font-size: 1rem;
+            color: #d4af37;
+            font-weight: 500;
+            margin: 4px 0;
+        }
+        .item-desc {
+            color: #999;
+            font-size: 0.85rem;
+            margin: 4px 0 10px 0;
+            flex: 1;
+        }
+        .item-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+        .qty-btn {
+            background: #2a2a2a;
+            color: #f0e6d3;
+            border: none;
+            border-radius: 6px;
+            width: 32px;
+            height: 32px;
+            font-size: 1.2rem;
+            font-weight: 300;
+            cursor: pointer;
+            transition: background 0.15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .qty-btn:hover {
+            background: #3a3a3a;
+        }
+        .qty-btn.minus:hover {
+            background: #6b2e2e;
+        }
+        .qty-btn.plus:hover {
+            background: #2a6b2e;
+        }
+        .qty-display {
+            min-width: 28px;
+            text-align: center;
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+        .action-btn {
+            background: #2a2a2a;
+            color: #f0e6d3;
+            border: none;
+            border-radius: 6px;
+            padding: 4px 14px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .action-btn.add {
+            background: #1e4a2a;
+            color: #b8e6b8;
+        }
+        .action-btn.add:hover {
+            background: #2a6a3a;
+        }
+        .action-btn.remove {
+            background: #4a2a2a;
+            color: #e6b8b8;
+        }
+        .action-btn.remove:hover {
+            background: #6a3a3a;
+        }
+
+        /* Fixed cart */
+        #cart {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #111;
+            border-top: 2px solid #d4af37;
+            padding: 14px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 100;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.7);
+        }
+        #cart-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+        #cart-total {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #d4af37;
+        }
+        .cart-inputs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            flex: 1;
+        }
+        .cart-inputs input,
+        .cart-inputs textarea {
+            background: #1e1e1e;
+            border: 1px solid #333;
+            border-radius: 6px;
+            padding: 8px 12px;
+            color: #f0e6d3;
+            font-size: 0.9rem;
+            flex: 1 1 160px;
+            min-width: 120px;
+            resize: vertical;
+        }
+        .cart-inputs textarea {
+            flex-basis: 200px;
+            min-height: 44px;
+            font-family: inherit;
+        }
+        .cart-inputs input:focus,
+        .cart-inputs textarea:focus {
+            outline: 2px solid #d4af37;
+            outline-offset: 2px;
+        }
+        #place-order-btn {
+            background: #d4af37;
+            color: #0d0d0d;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 28px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.15s, transform 0.1s;
+            white-space: nowrap;
+        }
+        #place-order-btn:hover {
+            background: #e6c44a;
+        }
+        #place-order-btn:active {
+            transform: scale(0.97);
+        }
+
+        /* Modal overlay */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.7);
+            -webkit-backdrop-filter: blur(4px);
+            backdrop-filter: blur(4px);
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+            padding: 20px;
+        }
+        .modal-overlay.active {
+            display: flex;
+        }
+        .modal-box {
+            background: #1a1a1a;
+            border-radius: 16px;
+            padding: 30px;
+            max-width: 500px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+            border: 1px solid #d4af37;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+        }
+        .modal-box h2 {
+            color: #d4af37;
+            margin-bottom: 16px;
+            font-weight: 400;
+            letter-spacing: 1px;
+        }
+        .modal-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px solid #2a2a2a;
+        }
+        .modal-item span:last-child {
+            color: #d4af37;
+        }
+        .modal-total {
+            margin-top: 16px;
+            padding-top: 12px;
+            border-top: 2px solid #3a3a3a;
+            font-size: 1.2rem;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+        }
+        .modal-total span:last-child {
+            color: #d4af37;
+        }
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+            justify-content: flex-end;
+        }
+        .modal-actions button {
+            padding: 8px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .modal-actions .btn-cancel {
+            background: #333;
+            color: #f0e6d3;
+        }
+        .modal-actions .btn-cancel:hover {
+            background: #444;
+        }
+        .modal-actions .btn-confirm {
+            background: #d4af37;
+            color: #0d0d0d;
+            font-weight: 600;
+        }
+        .modal-actions .btn-confirm:hover {
+            background: #e6c44a;
+        }
+        .modal-close {
+            float: right;
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 1.4rem;
+            cursor: pointer;
+        }
+        .modal-close:hover {
+            color: #f0e6d3;
         }
     </style>
 </head>
-<body data-table="{{ table }}">
-    <h1 class="header-title">Table {{ table }} <span class="table-subtitle">Scan QR to order</span></h1>
+<body>
+    <div class="header">
+        <h1>Table {{ table }} <small>scan QR to order</small></h1>
+    </div>
 
-    <!-- Category dropdown -->
-    <select class="category-select" id="category-select" aria-label="Category filter" onchange="filterCategory()">
+    <select class="category-select" id="category-select" onchange="filterCategory()" aria-label="Filter menu by category">
         <option value="all">All</option>
         {% for cat in categories %}
         <option value="{{ cat }}">{{ cat }}</option>
@@ -63,16 +348,12 @@
             <div class="item-name">{{ item.name }}</div>
             <div class="item-price">{{ "%.2f"|format(item.price) }} KSh</div>
             <div class="item-desc">{{ item.description }}</div>
-            <div class="qty-control">
-                <button onclick="changeQty('{{ item.id }}', -1)">-</button>
-                <span id="qty-{{ item.id }}">0</span>
-                <button onclick="changeQty('{{ item.id }}', 1)">+</button>
-            </div>
-            <div class="item-actions">
-                <button class="add-btn" onclick="addItem('{{ item.id }}')">Add</button>
-                <button class="remove-btn" onclick="removeItem('{{ item.id }}')">Remove</button>
-                <button class="discount-btn" onclick="applyDiscount()">Discount</button>
-                <button class="customise-btn" onclick="customiseItem('{{ item.id }}')">Customise</button>
+            <div class="item-controls">
+                <button class="qty-btn minus" onclick="changeQty('{{ item.id }}', -1)">-</button>
+                <span class="qty-display" id="qty-{{ item.id }}">0</span>
+                <button class="qty-btn plus" onclick="changeQty('{{ item.id }}', 1)">+</button>
+                <button class="action-btn add" onclick="addItem('{{ item.id }}')">Add</button>
+                <button class="action-btn remove" onclick="removeItem('{{ item.id }}')">Remove</button>
             </div>
         </div>
         {% endfor %}
@@ -80,13 +361,30 @@
 
     <!-- Fixed Cart -->
     <div id="cart">
-        <div id="cart-left">
-            <span><strong>Your Order</strong></span>
-            <span>Total: <span id="total">0.00</span> KSh</span>
-            <input type="text" id="customer_name" placeholder="Your name (optional)">
+        <div id="cart-row">
+            <span id="cart-total">Total: 0.00 KSh</span>
+            <div class="cart-inputs">
+                <input type="text" id="customer_name" placeholder="Your name (optional)">
+                <textarea id="special_requests" placeholder="Special requests…" rows="1"></textarea>
+            </div>
+            <button id="place-order-btn" onclick="showOrderSummary()">Place Order</button>
         </div>
-        <div id="cart-right">
-            <button id="submit" onclick="submitOrder()">Place Order</button>
+    </div>
+
+    <!-- Modal / Order Summary -->
+    <div class="modal-overlay" id="summary-modal">
+        <div class="modal-box">
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+            <h2>Review Your Order</h2>
+            <div id="modal-items"></div>
+            <div class="modal-total">
+                <span>Total</span>
+                <span id="modal-total-amount">0.00 KSh</span>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+                <button class="btn-confirm" onclick="submitOrder()">Confirm & Place</button>
+            </div>
         </div>
     </div>
 
@@ -95,54 +393,41 @@
         let currentCategory = 'all';
 
         function changeQty(id, delta) {
-            id = parseInt(id);
             if (!cart[id]) cart[id] = 0;
             cart[id] = Math.max(0, cart[id] + delta);
-            document.getElementById('qty-'+id).textContent = cart[id];
+            document.getElementById('qty-' + id).textContent = cart[id];
             updateTotal();
+        }
+
+        function addItem(id) {
+            if (!cart[id] || cart[id] === 0) {
+                alert('Please increase the quantity using the + button first.');
+                return;
+            }
+            updateTotal();
+        }
+
+        function removeItem(id) {
+            if (cart[id] && cart[id] > 0) {
+                cart[id]--;
+                document.getElementById('qty-' + id).textContent = cart[id];
+                updateTotal();
+            } else {
+                alert('No items to remove.');
+            }
         }
 
         function updateTotal() {
             let total = 0;
             const items = document.querySelectorAll('.item-card');
             items.forEach(el => {
-                const id = parseInt(el.querySelector('.qty-control span').id.split('-')[1]);
-                if (cart[id] > 0) {
-                    // Strip non-numeric characters (like currency) before parsing
-                    const priceText = el.querySelector('.item-price').textContent || '';
-                    const price = parseFloat(priceText.replace(/[^0-9.-]+/g, '')) || 0;
+                const id = parseInt(el.querySelector('.qty-display').id.split('-')[1]);
+                if (cart[id] && cart[id] > 0) {
+                    const price = parseFloat(el.querySelector('.item-price').textContent);
                     total += cart[id] * price;
                 }
             });
-            document.getElementById('total').textContent = total.toFixed(2);
-        }
-
-        function addItem(id) {
-            const qty = cart[id] || 0;
-            if (qty === 0) { alert('Please increase quantity first.'); return; }
-            // In a real implementation, this would add to order via AJAX
-            // For now, we just submit with the cart.
-            // We'll use the existing submitOrder logic.
-            // We can also directly add to the cart by calling changeQty.
-            // We'll simply trigger the place order.
-            alert('Item ' + id + ' will be added with quantity ' + qty);
-        }
-
-        function removeItem(id) {
-            // Remove one item from cart
-            if (cart[id] > 0) {
-                cart[id]--;
-                document.getElementById('qty-'+id).textContent = cart[id];
-                updateTotal();
-            }
-        }
-
-        function applyDiscount() {
-            alert('Discount button clicked – would apply discount to current order.');
-        }
-
-        function customiseItem(id) {
-            alert('Customise item ' + id + ' – would open a dialog for extras.');
+            document.getElementById('cart-total').textContent = 'Total: ' + total.toFixed(2) + ' KSh';
         }
 
         function filterCategory() {
@@ -159,35 +444,95 @@
             });
         }
 
+        // Modal functions
+        function showOrderSummary() {
+            const items = Object.keys(cart).filter(k => cart[k] > 0);
+            if (items.length === 0) {
+                alert('Please add items to your order.');
+                return;
+            }
+            let html = '';
+            let total = 0;
+            const cards = document.querySelectorAll('.item-card');
+            items.forEach(id => {
+                const card = Array.from(cards).find(el => {
+                    const qtyEl = el.querySelector('.qty-display');
+                    return qtyEl && qtyEl.id === 'qty-' + id;
+                });
+                if (card) {
+                    const name = card.querySelector('.item-name').textContent;
+                    const price = parseFloat(card.querySelector('.item-price').textContent);
+                    const qty = cart[id];
+                    const subtotal = qty * price;
+                    total += subtotal;
+                    html += `<div class="modal-item"><span>${qty} × ${name}</span><span>${subtotal.toFixed(2)} KSh</span></div>`;
+                }
+            });
+            document.getElementById('modal-items').innerHTML = html;
+            document.getElementById('modal-total-amount').textContent = total.toFixed(2) + ' KSh';
+            document.getElementById('summary-modal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('summary-modal').classList.remove('active');
+        }
+
         function submitOrder() {
             const items = Object.keys(cart).filter(k => cart[k] > 0).map(id => ({
                 menu_item_id: parseInt(id),
                 quantity: cart[id]
             }));
             if (items.length === 0) {
-                alert('Please add items to your order.');
+                alert('No items to submit.');
+                closeModal();
                 return;
             }
-            const customer_name = document.getElementById('customer_name').value || 'Guest';
-            const tableId = parseInt(document.body.dataset.table);
+            const customer_name = document.getElementById('customer_name').value.trim() || 'Guest';
+            const special_requests = document.getElementById('special_requests').value.trim() || '';
+
+            const btn = document.getElementById('place-order-btn');
+            btn.disabled = true;
+            btn.textContent = 'Sending…';
+
             fetch('/submit_order', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    table_id: tableId,
+                    table_id: parseInt('{{ table }}'),
                     items: items,
-                    customer_name: customer_name
+                    customer_name: customer_name,
+                    special_requests: special_requests
                 })
             })
             .then(res => res.json())
             .then(data => {
                 alert(data.message);
                 cart = {};
-                document.querySelectorAll('.qty-control span').forEach(el => el.textContent = '0');
+                document.querySelectorAll('.qty-display').forEach(el => el.textContent = '0');
                 updateTotal();
+                closeModal();
+                btn.disabled = false;
+                btn.textContent = 'Place Order';
+                document.getElementById('customer_name').value = '';
+                document.getElementById('special_requests').value = '';
             })
-            .catch(err => alert('Error submitting order. Please try again.'));
+            .catch(err => {
+                alert('Error submitting order. Please try again.');
+                btn.disabled = false;
+                btn.textContent = 'Place Order';
+            });
         }
+
+        // Close modal on overlay click
+        document.getElementById('summary-modal').addEventListener('click', function(e) {
+            if (e.target === this) closeModal();
+        });
+
+        // Auto-resize textarea
+        document.getElementById('special_requests').addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+        });
     </script>
 </body>
 </html>
