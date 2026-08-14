@@ -32,13 +32,12 @@ class AuthWindow:
 
     def validate_phone(self, phone):
         """Validate Kenyan phone numbers: 07XXXXXXXX, 01XXXXXXXX, +254XXXXXXXXX, 254XXXXXXXXX."""
-        # Remove spaces and dashes
         phone = re.sub(r'[\s\-()]', '', phone)
         patterns = [
-            r'^07\d{8}$',      # 0712345678
-            r'^01\d{8}$',      # 0112345678
-            r'^254\d{9}$',     # 254712345678
-            r'^\+254\d{9}$'    # +254712345678
+            r'^07\d{8}$',
+            r'^01\d{8}$',
+            r'^254\d{9}$',
+            r'^\+254\d{9}$'
         ]
         for pattern in patterns:
             if re.match(pattern, phone):
