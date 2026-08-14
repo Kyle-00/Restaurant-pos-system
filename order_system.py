@@ -105,7 +105,7 @@ class OrderSystem:
                                     font=(Theme.FONT_FAMILY, Theme.FONT_SIZE_NORMAL))
         self.order_status_label.pack(side="right")
 
-        # Order items treeview – height=2 to save space
+        # Order items treeview – height=1, wider columns
         tree_frame = tk.Frame(order_frame, bg=Theme.BG_SECONDARY)
         tree_frame.pack(fill="both", expand=True, padx=10, pady=3)
 
@@ -116,7 +116,7 @@ class OrderSystem:
 
         columns = ("item", "qty", "price", "total", "status", "chef")
         self.items_tree = ttk.Treeview(tree_frame, columns=columns, show="headings",
-                                      height=2, style="Custom.Treeview",
+                                      height=1, style="Custom.Treeview",
                                       yscrollcommand=v_scroll.set,
                                       xscrollcommand=h_scroll.set)
         self.items_tree.pack(side="left", fill="both", expand=True)
@@ -130,14 +130,15 @@ class OrderSystem:
         self.items_tree.heading("status", text="Status")
         self.items_tree.heading("chef", text="Chef")
 
-        self.items_tree.column("item", width=110)
-        self.items_tree.column("qty", width=35, anchor="center")
-        self.items_tree.column("price", width=65, anchor="e")
-        self.items_tree.column("total", width=65, anchor="e")
-        self.items_tree.column("status", width=65, anchor="center")
-        self.items_tree.column("chef", width=70, anchor="center")
+        # Wider columns for better readability
+        self.items_tree.column("item", width=180)
+        self.items_tree.column("qty", width=40, anchor="center")
+        self.items_tree.column("price", width=80, anchor="e")
+        self.items_tree.column("total", width=80, anchor="e")
+        self.items_tree.column("status", width=70, anchor="center")
+        self.items_tree.column("chef", width=80, anchor="center")
 
-        # Special requests entry – reduced padding
+        # Special requests entry – minimal padding
         req_frame = tk.Frame(order_frame, bg=Theme.BG_SECONDARY, padx=10, pady=3)
         req_frame.pack(fill="x")
         tk.Label(req_frame, text="Special Requests:",
@@ -172,7 +173,7 @@ class OrderSystem:
                  font=(Theme.FONT_FAMILY, Theme.FONT_SIZE_SMALL, "bold"),
                  relief="flat", padx=6, pady=2).pack(side="left", padx=2)
 
-        # Totals frame – minimal padding
+        # Totals frame – minimal padding, ensure it stays at bottom
         totals_frame = tk.Frame(order_frame, bg=Theme.BG_TERTIARY, padx=10, pady=2)
         totals_frame.pack(fill="x", side="bottom")
         self.subtotal_label = tk.Label(totals_frame, text=f"Subtotal: {CURRENCY_SYMBOL} 0.00",
